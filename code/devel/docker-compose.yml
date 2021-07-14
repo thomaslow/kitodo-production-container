@@ -1,0 +1,42 @@
+version: '3'
+services:
+  
+  database:
+    image: mariadb:10.6
+    environment:
+      - MYSQL_DATABASE=kitodo
+      - MYSQL_USER=kitodo
+      - MYSQL_PASSWORD=kitodo
+      - MARIADB_ROOT_PASSWORD=kitodo
+    volumes:
+      - ${DATA_DIR}/database:/var/lib/mysql:Z
+  
+  elastic:
+    image: elasticsearch:5
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - ${DATA_DIR}/elastic:/usr/share/elasticsearch/data:Z
+
+  tomcat:
+    image: tomcat:9-jdk11
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+        - ${DATA_DIR}/tomcat:/usr/local/tomcat/webapps:Z
+
+  maven:
+    build: ./images/maven/
+    volumes:
+      - ${WORK_DIR}:/workspace:Z
+      - ${HOME}/.m2:/root/.m2:Z
+    # set ulimits to high value, otherwise maven build can fail
+    # if ulimits for max open files default to 1024
+    ulimits:
+      nofile:
+        soft: 32768
+        hard: 32768
+    depends_on:
+      - database
+      - elastic
+      
